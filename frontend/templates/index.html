@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Food Optimizer - Mode Selection</title>
+    <script src="static/assets/js/index.js" type="module"></script>
+  <!--  <link rel="stylesheet" href="assets/css/main.css">-->
+    <link rel="stylesheet" href="static/assets/css/index.css">
+
+ 
+</head>
+<body>
+    <div class="main-container">
+        <div class="mode-selection-card">
+            <div class="title-section">
+                <h1 class="main-title">Menu Optimizer</h1>
+                <!-- 追加コンポーネント1: URL入力テキストボックス -->
+             <!-- メニュー選択セレクトボックス -->
+             <div class="menu-selection-container">
+                <select id="menuSelect" class="menu-select">
+                    <option value="">選択してください</option><!--スクレイピングで動的にやってもいいけどあんまめりっとかんじん-->
+                   
+                <!--   <option value="https://west2-univ.jp/sp/menu.php?t=663251">メニュー1</option>
+                    <option value="https://example.com/menu2">メニュー2</option>
+                    <option value="https://example.com/menu3">メニュー3</option>
+                    <option value="https://example.com/menu4">メニュー4</option>
+                    <option value="https://example.com/menu5">メニュー5</option> -->
+                </select>
+            </div>
+            <!-- 追加コンポーネント2: URL遷移ボタン -->
+            <button class="url-button" id="visitUrlButton">
+                メニューサイトを開く
+            </button>
+                <p>最適化モードを選択してください</p>
+            </div>
+
+            <div class="mode-options">
+                <!-- モード選択オプション -->
+                <div class="radio-item">
+                    <input type="radio" id="mode1" name="optimizeMode" value="balance">
+                    <label class="radio-label" for="mode1">
+                        <span class="custom-radio"></span>
+                        <div>
+                            <div>バランス最適モード</div>
+                            <small>栄養バランスと予算を考慮</small>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="radio-item">
+                    <input type="radio" id="mode2" name="optimizeMode" value="budget">
+                    <label class="radio-label" for="mode2">
+                        <span class="custom-radio"></span>
+                        <div>
+                            <div>コスト最優先モード</div>
+                            <small>最小予算で最大満足度</small>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="radio-item">
+                    <input type="radio" id="mode3" name="optimizeMode" value="health">
+                    <label class="radio-label" for="mode3">
+                        <span class="custom-radio"></span>
+                        <div>
+                            <div>ヘルスケアモード</div>
+                            <small>カロリーと栄養素を最適化</small>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+           <!-- <button class="submit-button" onclick="handleSubmit()">-->
+                <button class="submit-button" id="submitButton">    
+                メニュー最適化開始 →
+            </button>
+        </div>
+    </div>
+
+  
+</body>
+</html>

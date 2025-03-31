@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend      # Uses backend/Dockerfile
+    ports:
+      - "5000:5000"       # Flask default port
+    volumes:
+      - ./backend:/app    # Live code reload (development only)
+  
+  frontend:
+    image: nginx          # Serves static files (JS/CSS/HTML)
+    ports:
+      - "80:80"           # HTTP access
+    volumes:
+      - ./static:/usr/share/nginx/html   # Mount static files
