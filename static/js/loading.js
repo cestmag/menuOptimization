@@ -42,13 +42,13 @@ loadCode();
 
 
 // --- 新規追加：API を呼び出す関数 ---
-function startOptimization(mode, url) {
+function startOptimization(mode, menu_id) {
     fetch('/api/optimize', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ mode: mode, url: url })
+        body: JSON.stringify({ mode: mode, menu_id: menu_id })
     })
     .then(response => {
         if (!response.ok) {

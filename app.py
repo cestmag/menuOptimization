@@ -49,20 +49,20 @@ def loading():
 def optimize():
     data = request.get_json()
     mode = data.get('mode')
-    url = data.get('url')
+    menu_id = data.get('menu_id')
     
     if not mode:
         print("mode not selected...")
         return jsonify({"message": "Mode not specified"}), 400
     
-    if not url or not is_safe_url(url):
+    if not menu_id or not is_safe_url(menu_id):
         return jsonify({
             "message": "指定されたURLは安全でない可能性があるため、最適化できません。 有効なHTTP/HTTPS URLを指定してください"
         }), 400
     
     try:
         print("optimization start command on app.py..")
-        optimized_menu = get_optimized_menu(mode, url)
+        optimized_menu = get_optimized_menu(mode, menu_id)
         print("optimized menu:", optimized_menu)
         return jsonify(optimized_menu)
     except Exception as e:

@@ -1,4 +1,4 @@
-def get_optimized_menu(mode, url=None):
+def get_optimized_menu(mode, menu_id=None):
     """
     CSVデータとExcelの基準値からメニュー最適化を行い、
     各商品の数量と画像URLを含む連想配列を返す関数。
@@ -17,7 +17,7 @@ def get_optimized_menu(mode, url=None):
     import time
 
     # ★ ファイルパスの設定（適宜パスを変更してください）
-    menu_csv_file = "menu_csv/data_test_menu.csv"    # プログラム1で作成されたCSVファイル
+    menu_csv_file = "menu_csv/" + menu_id #data_test_menu.csv" #filetitleにファイル名が入っている   # プログラム1で作成されたCSVファイル
     std_excel_file = "data_std.xlsx"       # Excel形式の基準値ファイル
 
     # ★ CSVからデータを読み込み
