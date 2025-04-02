@@ -1,202 +1,116 @@
-import time
-import re
-import random
-import pulp
-import openpyxl
-import os
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-
-def scrape_menu_data(target_url):
-
-    print("scraping start..")
+def get_optimized_menu(mode, url=None):
     """
-    Selenium を用いて指定の target_url からメニューの URL 一覧を取得し、
-    各料理ページから料理名、価格、各栄養素、画像URL をスクレイピングする。
-    結果は辞書のリストとして返す。
-    """
-    # ChromeDriver のパスは環境に合わせて変更してください
-    # 環境変数から ChromeDriver のパスを取得
-     # 環境変数から ChromeDriver のパスを取得
-    chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/local/bin/chromedriver')
-    service = Service(chromedriver_path)
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  # PaaS 環境では headless モードが推奨される
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    data_list = []
+    CSVデータとExcelの基準値からメニュー最適化を行い、
+    各商品の数量と画像URLを含む連想配列を返す関数。
 
-    print("chrome success..")
-    
-    try:
-        # 指定されたURLからスクレイピング開始
-        driver.get(target_url)
-        time.sleep(2)
-        wait = WebDriverWait(driver, 10)
-        
-        # 各種ボタンをクリックしてメニューの一覧表示を展開
-        element_ids = ["on_b", "on_c", "on_d", "on_bunrui1"]
-        for element_id in element_ids:
-            try:
-                element = wait.until(EC.element_to_be_clickable((By.ID, element_id)))
-                element.click()
-                print(f"Clicked {element_id}")
-                time.sleep(1)
-            except Exception as e:
-                print(f"Could not click {element_id}: {e}")
-        
-        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "catMenu")))
-        links = driver.find_elements(By.CSS_SELECTOR, ".catMenu a")
-        urls = [link.get_attribute("href") for link in links]
-        print(f"取得したURL数: {len(urls)} 件")
-        
-        # 各料理の詳細ページから情報を取得
-        for url in urls:
-            driver.get(url)
-            time.sleep(2)
-            try:
-                title_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "#main h1")))
-                recipe_name = title_element.text.strip().split("\n")[0]
-                
-                # 価格などの情報（class="price" の要素）
-                elements = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "price")))
-                # 画像は最初の img タグから取得
-                image_elements = driver.find_elements(By.CSS_SELECTOR, "#main img")
-                image_url = image_elements[0].get_attribute("src") if image_elements else "なし"
-                
-                # 各種数値情報（数字のみ抽出）
-                values = [re.sub(r"[^\d.]", "", elem.text) for elem in elements]
-                
-                # 必要な栄養素情報が12項目以上ある場合のみ採用
-                if len(values) >= 12:
-                    data_dict = {
-                        "料理名": recipe_name,
-                        "価格": values[0],
-                        "エネルギー": values[1],
-                        "タンパク質": values[2],
-                        "脂質": values[3],
-                        "炭水化物": values[4],
-                        "食塩相当量": values[5],
-                        "カルシウム": values[6],
-                        "野菜量": values[7],
-                        "鉄": values[8],
-                        "ビタミンA": values[9],
-                        "ビタミンB1": values[10],
-                        "ビタミンB2": values[11],
-                        "ビタミンC": values[12],
-                        "画像URL": image_url
-                    }
-                    data_list.append(data_dict)
-                    print(f"取得成功: {data_dict}")
-                else:
-                    print(f"データ不足のためスキップ: {url}")
-            except Exception as e:
-                print(f"エラー発生: {url}, {e}")
-        
-        print("\n=== 取得データ一覧 ===")
-        for item in data_list:
-            print(item)
-    
-    finally:
-        driver.quit()
-    
-    return data_list
+    Parameters:
+        mode (str): '普通', 'タンパク質', 'カロリー' のいずれか。
+        url (str): セキュリティチェック用（現状は未使用）。
 
-def run_optimization(data_list, mode):
+    Returns:
+        dict: キーが料理名、値が {"quantity": 数量, "image_url": 画像URL} の辞書。
     """
-    スクレイピングで取得したメニュー情報と、Excel の基準値（data_std.xlsx）に基づく栄養素最適化問題を解く。
-    各料理の数量と画像URL、合計価格を結果として連想配列で返す。
-    """
-    # CSV の場合と同様のフォーマットで、料理名・価格・栄養素情報を整形する
-    nutrient_names = ["エネルギー", "タンパク質", "脂質", "炭水化物", "食塩相当量",
-                      "カルシウム", "野菜量", "鉄", "ビタミンA", "ビタミンB1", "ビタミンB2", "ビタミンC"]
-    
-    menus = []
-    prices = {}
-    nutrients = {}
-    images = {}  # 料理ごとの画像URLを保持
-    
-    for item in data_list:
-        menu = item["料理名"]
-        price = item["価格"]
-        try:
-            price_val = int(price) if price else 0
-        except:
-            price_val = 0
-        
-        nutrient_values = []
-        for n in nutrient_names:
-            try:
-                val = float(item[n]) if item[n] else 0.0
-            except:
-                val = 0.0
-            nutrient_values.append(val)
-        
-        menus.append(menu)
-        prices[menu] = price_val
-        nutrients[menu] = nutrient_values
-        images[menu] = item.get("画像URL", "なし")
-    
-    # Excelファイル（data_std.xlsx）から基準摂取量(required)と最大摂取量(max)を取得する
-    std_excel_file = "data_std.xlsx"
+    import csv
+    import pulp
+    import openpyxl
+    import random
+    import time
+
+    # ★ ファイルパスの設定（適宜パスを変更してください）
+    menu_csv_file = "menu_csv/data_test_menu.csv"    # プログラム1で作成されたCSVファイル
+    std_excel_file = "data_std.xlsx"       # Excel形式の基準値ファイル
+
+    # ★ CSVからデータを読み込み
+    menus = []         # 料理名リスト
+    prices = {}        # 料理ごとの価格
+    nutrients = {}     # 料理ごとの栄養素データ（数値リスト）
+    image_urls = {}    # 料理ごとの画像URL
+
+    with open(menu_csv_file, "r", encoding="utf-8-sig") as f:
+        reader = csv.reader(f)
+        data = list(reader)
+
+    # ヘッダーの想定: ["料理名", "価格", "エネルギー", "タンパク質", ... , "ビタミンC", "画像URL"]
+    # 栄養素は「料理名」と「価格」、および「画像URL」を除いた部分とする
+    header = data[0]
+    nutrient_names = header[2:-1]  # 最後の列(画像URL)は除外
+
+    for row in data[1:]:
+        if not row:
+            continue
+        menu_name = row[0]
+        price = int(row[1])
+        # 栄養素はヘッダーに沿って、2列目から最後の前までを変換
+        nutrient_values = [float(v) if v else 0.0 for v in row[2:-1]]
+        image_url = row[-1]
+
+        menus.append(menu_name)
+        prices[menu_name] = price
+        nutrients[menu_name] = nutrient_values
+        image_urls[menu_name] = image_url
+
+    # ★ Excelから必要栄養素の基準値を読み込み
     required_nutrients = []
-    max_nutrients = []
-    
+    max_nutrients = []  # （ここでは上限は利用しません）
+
     wb = openpyxl.load_workbook(std_excel_file, data_only=True)
     sheet = wb.active
+    # 2行目以降のB列（必要量）とC列（最大摂取量）を読み込み
     for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, min_col=2, max_col=3, values_only=True):
-        required_nutrients.append(float(row[0]) if row[0] is not None else 0.0)
-        max_nutrients.append(float(row[1]) if row[1] is not None else float("inf"))
+        req = float(row[0]) if row[0] is not None else 0.0
+        max_val = float(row[1]) if row[1] is not None else float("inf")
+        required_nutrients.append(req)
+        max_nutrients.append(max_val)
     wb.close()
-    
-    # モードに応じた必要栄養素の調整
-    modified_required_nutrients = required_nutrients[:]
-    if mode == 'normal':
+
+    # ★ modeに応じて必要栄養素を調整
+    modified_required_nutrients = required_nutrients[:]  # ディープコピー
+    if mode == '普通':
+        # 全栄養素を 0.75〜1.25 倍でランダム調整
         modified_required_nutrients = [val * random.uniform(0.75, 1.25) for val in required_nutrients]
-    elif mode == 'tanpaku':
+    elif mode == 'タンパク質':
+        # タンパク質（リスト中、2番目＝インデックス1）を強化
         modified_required_nutrients[1] *= random.uniform(1.5, 2.0)
-    elif mode == 'karori':
+    elif mode == 'カロリー':
+        # エネルギー（リスト中、最初＝インデックス0）を強化
         modified_required_nutrients[0] *= random.uniform(1.5, 2.0)
     else:
         raise ValueError(f"未知のモード: {mode}")
-    
-    # 最適化問題（総価格の最小化）を PuLP で解く（今回は1回の試行とする）
-    trial = 1
-    problem = pulp.LpProblem(f"Menu_Optimization_Trial_{trial}", pulp.LpMinimize)
-    x = pulp.LpVariable.dicts("x", menus, lowBound=0, cat='Integer')
-    problem += pulp.lpSum([prices[m] * x[m] for m in menus])
-    for i, nutrient in enumerate(nutrient_names):
-        problem += pulp.lpSum([nutrients[m][i] * x[m] for m in menus]) >= modified_required_nutrients[i], f"{nutrient}_min_constraint_{trial}"
-    
-    problem.solve(pulp.PULP_CBC_CMD(msg=False))
-    
-    result = {}
-    for m in menus:
-        qty = int(pulp.value(x[m]))
-        if qty >= 1:
-            result[m] = {"数量": qty, "画像URL": images[m]}
-    result["合計価格"] = pulp.value(problem.objective)
-    return result
 
-def get_optimized_menu(mode, url):
-    """
-    Flask の API から呼ばれる関数。
-    引数として受け取ったスクレイピング先の URL とモードを用い、スクレイピングおよび最適化を実施し、
-    結果を連想配列で返す。（各料理の数量と画像URL、合計価格）
-    """
-    # 指定された URL からメニュー情報をスクレイピング
-    print("scraping is about to start...")
-    data_list = scrape_menu_data(url)
-    if not data_list:
-        print("scraping failed:( ")
-        raise ValueError("スクレイピングに失敗しました。データが取得できませんでした。")
+    # ★ 最適化問題の定義
+    problem = pulp.LpProblem("Menu_Optimization", pulp.LpMinimize)
+    # 料理ごとの選択数（重複選択可、整数変数）
+    x = pulp.LpVariable.dicts("x", menus, lowBound=0, cat='Integer')
+
+    # 目的関数：全体の価格を最小化
+    problem += pulp.lpSum([prices[m] * x[m] for m in menus])
+
+    # 各栄養素について、必要量以上となるよう制約を追加
+    for i, nutrient_name in enumerate(nutrient_names):
+        problem += pulp.lpSum([nutrients[m][i] * x[m] for m in menus]) >= modified_required_nutrients[i], f"{nutrient_name}_min_constraint"
+
+    # 最適化の実行（内部の出力は非表示）
+    problem.solve(pulp.PULP_CBC_CMD(msg=False))
+
+    # ★ 結果の集計：選択された料理のみを返す（数量が1以上のもの）
+    optimized_menu = {}
+    for m in menus:
+        quantity = int(pulp.value(x[m]))
+        if quantity >= 1:
+            optimized_menu[m] = {
+                "quantity": quantity,
+                "image_url": image_urls[m]
+            }
+
+    # （処理中の疑似待機：必要に応じて）
+    # time.sleep(3)
     
-    optimized_result = run_optimization(data_list, mode)
-    return optimized_result
+    return optimized_menu
+
+# 以下、関数の動作確認用（単体テスト）：
+if __name__ == '__main__':
+    # 例：モード 'カロリー' で実行
+    result = get_optimized_menu("カロリー", url="http://example.com")
+    print("最適化結果:")
+    for menu, info in result.items():
+        print(f"{menu}: {info['quantity']}個, 画像URL: {info['image_url']}")

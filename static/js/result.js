@@ -1,32 +1,32 @@
- // 前回のJavaScriptコードと同じ内容
-//  const foodData = {
-//     "親子丼": 1,
-//     "白ご飯": 2,
-//     "味噌汁": 1,
-//     "猛毒入りスープ": 3
-// };//これは本来はバックエンドからもらってくる
-
-
 // URLパラメータからモードを取得
 const urlParams = new URLSearchParams(window.location.search);
 const mode = urlParams.get('mode');
 
-// localStorageからデータを取得
+// localStorageからoptimized_menu形式のデータを取得
 const foodData = JSON.parse(localStorage.getItem('optimizedMenu')) || {};
 
-function createPhotoItem(foodName) {
+/**
+ * 画像要素を生成する関数
+ * @param {string} foodName - 料理名
+ * @param {string} imageUrl - 画像URL
+ * @returns {HTMLElement} - 画像を含む要素
+ */
+function createPhotoItem(foodName, imageUrl) {
     const container = document.createElement('div');
     container.className = 'photo-item';
 
     const img = new Image();
     img.className = 'food-photo';
     img.alt = `${foodName}の写真`;
-    img.src = `images/${foodName}.jpg`;//ここはほんとは生協のページから写真をひっぱってくる
+    // 画像URLを動的に設定
+    img.src = imageUrl;
 
+    // 画像読み込みエラー時のフォールバック
     img.onerror = () => {
         const fallback = document.createElement('div');
         fallback.className = 'photo-fallback';
         fallback.textContent = foodName;
+        container.innerHTML = '';  // エラー時は画像をクリア
         container.appendChild(fallback);
     };
 
@@ -37,7 +37,10 @@ function createPhotoItem(foodName) {
 function renderSections() {
     const container = document.getElementById('container');
     
-    Object.entries(foodData).forEach(([foodName, count]) => {
+    // foodDataは { foodName: { quantity, image_url } } の形式
+    Object.entries(foodData).forEach(([foodName, info]) => {
+        const { quantity, image_url } = info;
+        
         const section = document.createElement('div');
         section.className = 'food-section';
 
@@ -48,8 +51,8 @@ function renderSections() {
         const grid = document.createElement('div');
         grid.className = 'photos-grid';
 
-        for (let i = 0; i < count; i++) {
-            grid.appendChild(createPhotoItem(foodName));
+        for (let i = 0; i < quantity; i++) {
+            grid.appendChild(createPhotoItem(foodName, image_url));
         }
 
         section.append(title, grid);
@@ -63,7 +66,6 @@ window.addEventListener('resize', () => {
         item.style.transform = 'none';
     });
 });
-
 
 document.getElementById('backButton')?.addEventListener('click', () => {
     // クリック時のエフェクト
