@@ -1,5 +1,6 @@
 // 店舗データの定義
 const storeData = [
+    //https://west2-univ.jp/sp/menu.php?t=663255
     {
         name: "カフェテリアレインボー",
         url: "https://west2-univ.jp/sp/menu.php?t=663251",

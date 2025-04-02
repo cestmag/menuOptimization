@@ -136,6 +136,9 @@ function showError(errorMessage) {
 
 // --- DOMContentLoaded 時に最適化を開始 ---
 document.addEventListener('DOMContentLoaded', () => {
+
+    
+
     startOptimization(mode, url);
     
     window.addEventListener('beforeunload', (e) => {
