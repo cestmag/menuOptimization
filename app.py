@@ -50,14 +50,16 @@ def optimize():
     data = request.get_json()
     mode = data.get('mode')
     menu_id = data.get('menu_id')
+
+    print("menu_id", menu_id)
     
     if not mode:
         print("mode not selected...")
         return jsonify({"message": "Mode not specified"}), 400
     
-    if not menu_id or not is_safe_url(menu_id):
+    if not menu_id:
         return jsonify({
-            "message": "指定されたURLは安全でない可能性があるため、最適化できません。 有効なHTTP/HTTPS URLを指定してください"
+            "message": " menu id null"
         }), 400
     
     try:

@@ -17,7 +17,7 @@ def get_optimized_menu(mode, menu_id=None):
     import time
 
     # ★ ファイルパスの設定（適宜パスを変更してください）
-    menu_csv_file = "menu_csv/" + menu_id #data_test_menu.csv" #filetitleにファイル名が入っている   # プログラム1で作成されたCSVファイル
+    menu_csv_file = "menu_csv/" + menu_id + ".csv" #data_test_menu.csv" #filetitleにファイル名が入っている   # プログラム1で作成されたCSVファイル
     std_excel_file = "data_std.xlsx"       # Excel形式の基準値ファイル
 
     # ★ CSVからデータを読み込み
@@ -65,13 +65,13 @@ def get_optimized_menu(mode, menu_id=None):
 
     # ★ modeに応じて必要栄養素を調整
     modified_required_nutrients = required_nutrients[:]  # ディープコピー
-    if mode == '普通':
+    if mode == 'normal':
         # 全栄養素を 0.75〜1.25 倍でランダム調整
         modified_required_nutrients = [val * random.uniform(0.75, 1.25) for val in required_nutrients]
-    elif mode == 'タンパク質':
+    elif mode == 'tanpaku':
         # タンパク質（リスト中、2番目＝インデックス1）を強化
         modified_required_nutrients[1] *= random.uniform(1.5, 2.0)
-    elif mode == 'カロリー':
+    elif mode == 'karori':
         # エネルギー（リスト中、最初＝インデックス0）を強化
         modified_required_nutrients[0] *= random.uniform(1.5, 2.0)
     else:
