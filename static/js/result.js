@@ -1,9 +1,22 @@
-// URLパラメータからmodeを取得（必要に応じて利用）
+import storeData from './store.js';
+
+const mode_Map = {"normal":"通常", "tanpaku":"タンパク質","karori":"カロリー"}
+// URLパラメータからmodeおよびurlを取得
 const urlParams = new URLSearchParams(window.location.search);
 const mode = urlParams.get('mode');
+const urlParam = urlParams.get('url');
+
+// 店舗名を取得するための関数
+// 店舗名を取得する関数（urlはそのまま識別子として扱う）
+function getStoreName(storeId) {
+    if (!storeId) return "不明";
+    const store = storeData.find(s => s.url === storeId);
+    return store ? store.name : "不明店舗";
+}
+const storeName = getStoreName(urlParam);
 
 // localStorageから最適化結果（複数試行のデータ）を取得
-// 形式例: { "trial_1": { "料理A": {quantity, image_url, price}, ... }, "trial_2": { ... } }
+// 例: { "trial_1": { "料理A": {quantity, image_url, price}, ... }, "trial_2": { ... } }
 const optimizedMenuData = JSON.parse(localStorage.getItem('optimizedMenu')) || {};
 
 /**
@@ -34,12 +47,28 @@ function createPhotoItem(foodName, imageUrl) {
 }
 
 /**
+ * ヘッダーを更新する関数
+ * 各試行結果の合計金額を算出し、店舗名、モード、合計金額を表示する
+ */
+function updateHeader(trialData) {
+    let total = 0;
+    Object.values(trialData).forEach(info => {
+        total += info.price * info.quantity;
+    });
+    const headerDiv = document.getElementById('result-header');
+    headerDiv.innerHTML = `<h1>${storeName}</h1>
+                           <p>モード: ${mode_Map[mode]}</p>
+                           <p>合計金額: ${total}円</p>`;
+}
+
+/**
  * 指定された試行結果（trialData）をレンダリングする関数
  * trialData: { foodName: { quantity, image_url, price }, ... }
  */
 function renderTrialResult(trialData) {
+    updateHeader(trialData);  // ヘッダー更新
     const container = document.getElementById('container');
-    container.innerHTML = ''; // 前回の結果をクリア
+    container.innerHTML = ''; // 既存の内容をクリア
 
     Object.entries(trialData).forEach(([foodName, info]) => {
         const { quantity, image_url, price } = info;
@@ -49,7 +78,7 @@ function renderTrialResult(trialData) {
 
         const title = document.createElement('h2');
         title.className = 'food-title';
-        title.textContent = `${foodName} - ${quantity}個 (${price}円)`;
+        title.textContent = `${foodName} - ${quantity}個 (${price} × ${quantity}円)`;
 
         const grid = document.createElement('div');
         grid.className = 'photos-grid';
@@ -82,7 +111,7 @@ function renderTrialButtons() {
         button.textContent = `プラン${index + 1}`;
         button.addEventListener('click', () => {
             renderTrialResult(optimizedMenuData[trialKey]);
-            // ボタンのアクティブ状態更新
+            // アクティブ状態更新
             document.querySelectorAll('.trial-button').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
         });
@@ -94,7 +123,7 @@ window.addEventListener('load', () => {
     renderTrialButtons();
     const trialKeys = Object.keys(optimizedMenuData);
     if (trialKeys.length > 0) {
-        // 初期表示は最初のプランの結果
+        // 初期表示は最初のプラン
         renderTrialResult(optimizedMenuData[trialKeys[0]]);
         const firstButton = document.querySelector('.trial-button');
         if (firstButton) firstButton.classList.add('active');
@@ -115,4 +144,3 @@ document.getElementById('backButton')?.addEventListener('click', () => {
         window.location.href = '/';
     }, 300);
 });
-

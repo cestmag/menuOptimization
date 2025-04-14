@@ -64,15 +64,16 @@ def get_optimized_menu(mode, menu_id=None):
     # ★ 複数回試行（例：5回）
     trial_results = {}
     num_trials = 5
+    seen_signatures = set()  # 既に出現した結果の署名を保持
 
     for trial in range(1, num_trials+1):
         # modeに応じた制約値の調整
         modified_required_nutrients = required_nutrients[:]  # コピー
-        if mode == '普通':
+        if mode == 'normal':
             modified_required_nutrients = [val * random.uniform(0.75, 1.25) for val in required_nutrients]
-        elif mode == 'タンパク質':
+        elif mode == 'tanpaku':
             modified_required_nutrients[1] *= random.uniform(1.5, 2.0)
-        elif mode == 'カロリー':
+        elif mode == 'karori':
             modified_required_nutrients[0] *= random.uniform(1.5, 2.0)
         else:
             raise ValueError(f"未知のモード: {mode}")
@@ -101,7 +102,15 @@ def get_optimized_menu(mode, menu_id=None):
                     "image_url": image_urls[m],
                     "price": prices[m]
                 }
-        trial_results[f"trial_{trial}"] = current_result
+        
+        # 現在の試行結果の署名を作成（料理名と数量の組み合わせで判定）
+        signature = tuple(sorted((m, current_result[m]["quantity"]) for m in current_result))
+        # 既出の結果と同じ場合は追加しない
+        if signature not in seen_signatures:
+            trial_results[f"trial_{trial}"] = current_result
+            seen_signatures.add(signature)
+
+        #trial_results[f"trial_{trial}"] = current_result
 
     time.sleep(3)
     return trial_results

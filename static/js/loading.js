@@ -100,7 +100,7 @@ function showResultReady() {
     // ボタンにイベントリスナーを追加
     resultButton.addEventListener('click', () => {
         resultButton.innerHTML = '読み込み中... <span class="mini-spinner"></span>';
-        window.location.href = `/result?mode=${mode}`;
+        window.location.href = `/result?mode=${mode}&url=${url}`;
     });
 }
 
