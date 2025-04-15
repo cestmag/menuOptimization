@@ -2,74 +2,74 @@ import csv
 import pulp
 import openpyxl
 
-# 📌 ファイルパス
-menu_csv_file = "data_test8.csv"  # 料理データ
-std_excel_file = "data_std.xlsx"  # 基準摂取量データ
+# File paths
+menu_csv_file = "data_test8.csv"  # Dish data
+std_excel_file = "data_std.xlsx"  # Standard nutrient intake data
 
-# 📌 栄養素名、メニュー名、価格、栄養素データを格納する辞書
+# Dictionaries to store nutrient names, dish names, prices, and nutrient data
 nutrient_names = []
 menus = []
 prices = {}
 nutrients = {}
 
-# 📌 `data_test8.csv` からデータを取得
+# Retrieve data from `data_test8.csv`
 with open(menu_csv_file, "r", encoding="utf-8-sig") as f:
     reader = csv.reader(f)
     data = list(reader)
 
-# 📌 ヘッダー（1行目）を取得
-nutrient_names = data[0][2:]  # 料理名, 価格 を除いた部分が栄養素
+# Get header (first line)
+nutrient_names = data[0][2:]  # Excluding dish name and price, the remaining columns are nutrients
 
-# 📌 データ部分を取得
+# Retrieve the data portion
 for row in data[1:]:
-    menu = row[0]  # 料理名
-    price = row[1]  # 価格
-    nutrient_values = row[2:]  # 栄養素データ
+    menu = row[0]           # Dish name
+    price = row[1]          # Price
+    nutrient_values = row[2:]  # Nutrient data
 
-    if menu and price:  # 空データでないことを確認
+    if menu and price:  # Ensure the data is not empty
         menus.append(menu)
         prices[menu] = int(price)
-        nutrients[menu] = [float(v) if v else 0.0 for v in nutrient_values]  # Noneを0に変換
+        nutrients[menu] = [float(v) if v else 0.0 for v in nutrient_values]  # Convert empty values to 0
 
-# 📌 `data_std.xlsx` から `required_nutrients` と `max_nutrients` を取得
+# Retrieve `required_nutrients` and `max_nutrients` from `data_std.xlsx`
 required_nutrients = []
 max_nutrients = []
 
-# 📌 Excelファイルを開く
+# Open the Excel file
 wb = openpyxl.load_workbook(std_excel_file, data_only=True)
-sheet = wb.active  # デフォルトのシートを選択（必要なら `wb['シート名']` に変更）
+sheet = wb.active  # Select the default sheet (change to `wb['SheetName']` if necessary)
 
-# 📌 2行目以降のB列（必要摂取量）とC列（最大摂取量）を取得
+# Retrieve required nutrient intake from column B and maximum nutrient intake from column C starting from row 2
 for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, min_col=2, max_col=3, values_only=True):
-    required_nutrients.append(float(row[0]) if row[0] is not None else 0.0)  # Noneを0に変換
-    max_nutrients.append(float(row[1]) if row[1] is not None else float("inf"))  # Noneなら無限大
+    required_nutrients.append(float(row[0]) if row[0] is not None else 0.0)  # Convert None to 0
+    max_nutrients.append(float(row[1]) if row[1] is not None else float("inf"))  # If None, then set to infinity
 
-# 📌 Excelを閉じる
+# Close the Excel file
 wb.close()
 
-# 📌 最適化問題の定義
+# Define the optimization problem
 problem = pulp.LpProblem("Menu_Optimization", pulp.LpMinimize)
 
-# 📌 各メニューの選択個数を整数変数として定義
+# Define integer variables for the quantity of each dish selected
 x = pulp.LpVariable.dicts("x", menus, lowBound=0, cat='Integer')
 
-# 📌 目的関数: 価格を最小化
+# Objective function: Minimize cost
 problem += pulp.lpSum([prices[m] * x[m] for m in menus])
 
-# 📌 栄養素の制約（最小必要量以上を確保）
+# Nutrient constraints (ensure at least the minimum required intake)
 for i, nutrient_name in enumerate(nutrient_names):
     problem += pulp.lpSum([nutrients[m][i] * x[m] for m in menus]) >= required_nutrients[i], f"{nutrient_name}_min_constraint"
 
-# # 📌 栄養素の上限制約（最大摂取量以下）
+# # Upper limits on nutrients (ensure no more than the maximum intake)
 # for i, nutrient_name in enumerate(nutrient_names):
 #     problem += pulp.lpSum([nutrients[m][i] * x[m] for m in menus]) <= max_nutrients[i], f"{nutrient_name}_max_constraint"
 
-# 📌 最適化の実行
+# Execute the optimization
 problem.solve(pulp.PULP_CBC_CMD(msg=False))
 
-# 📌 結果の表示
-print("最適化結果:")
+# Display results
+print("Optimization result:")
 for m in menus:
-    print(f"{m}: {int(pulp.value(x[m]))}個")
+    print(f"{m}: {int(pulp.value(x[m]))} pieces")
 
-print(f"合計価格: {pulp.value(problem.objective)}円")
+print(f"Total cost: {pulp.value(problem.objective)} yen")
