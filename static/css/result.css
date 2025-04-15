@@ -15,7 +15,7 @@ body {
     margin: 0;
     padding: var(--space-base);
     background: var(--color-primary);
-    color: #00ff6e;
+    color: #e0e0e0;
     font-family: 'Segoe UI', system-ui, sans-serif;
     /*font-family: "Zen Kurenaido", sans-serif;*/
 
