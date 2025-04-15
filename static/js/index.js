@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (realUrl) {
                 window.open(realUrl, '_blank');
             } else {
-                alert('有効なURLが見つかりません。');
+                alert('食堂を選択しなさい😡');
             }
         } else {
             alert('メニューを選択してください');
