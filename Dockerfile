@@ -16,9 +16,9 @@ COPY . .
 EXPOSE 5000
 
 # ⑤ コンテナ起動時のコマンドを指定する（gunicornでFlaskアプリを起動）
-#CMD ["python", "app.py"]
+CMD ["python", "app.py"]
 #本番環境
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"] 
+#CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"] 
 #
 #docker build -t my_flask_app .
 #docker run -p 5000:5000 my_flask_app
